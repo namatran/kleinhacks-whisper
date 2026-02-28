@@ -112,10 +112,42 @@ io.on("connection", (socket) => {
 
   // TYPING INDICATOR
   socket.on("typing", ({ roomId, isTyping }) => {
+    console.log(`[TYPING RECEIVED] From ${socket.id} in room ${roomId || 'missing'}, isTyping: ${isTyping}`);
+
     const room = rooms[roomId];
-    if (!room) return;
+    if (!room) {
+      console.log(`[TYPING ERROR] Room ${roomId} not found in rooms map`);
+      return;
+    }
+
+    console.log(`[TYPING ROOM] Members in ${roomId}: ${room.join(', ')}`);
+
     const recipientId = room.find((id) => id !== socket.id);
-    if (recipientId) io.to(recipientId).emit("stranger_typing", { isTyping });
+    if (!recipientId) {
+      console.log(`[TYPING ERROR] No recipient found in room ${roomId} for sender ${socket.id}`);
+      return;
+    }
+
+    console.log(`[TYPING BROADCAST] Sending 'stranger_typing' to ${recipientId} (isTyping: ${isTyping})`);
+    io.to(recipientId).emit("stranger_typing", { isTyping });
+  });
+
+  socket.on("breathing_break", ({ roomId }) => {
+    console.log(`[BREATHING] Received from ${socket.id} in room ${roomId}`);
+    const room = rooms[roomId];
+    if (!room) {
+      console.log(`[BREATHING ERROR] Room ${roomId} not found`);
+      return;
+    }
+    const recipientId = room.find(id => id !== socket.id);
+    if (!recipientId) {
+      console.log(`[BREATHING ERROR] No recipient in room ${roomId}`);
+      return;
+    }
+    console.log(`[BREATHING] Sending prompt to ${recipientId}`);
+    io.to(recipientId).emit("breathing_prompt", {
+      message: "Your stranger is taking a breathing break to stay calm. 😮‍💨"
+    });
   });
 
   // LEAVE CHAT

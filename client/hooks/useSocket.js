@@ -30,7 +30,8 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
     }
 
     function onTyping({ isTyping }) {
-      setStrangerTyping(isTyping)
+      console.log("stranger_typing event received! isTyping =", isTyping);
+      setStrangerTyping(isTyping);
     }
 
     function onStrangerLeftHandler() {
@@ -59,12 +60,21 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
       }])
     })
 
+    socket.on("breathing_prompt", ({ message }) => {
+      setMessages((prev) => [...prev, {
+        id: Date.now(),
+        sender: "system",
+        text: message || "Your stranger is taking a quick breathing break to stay calm 😮‍💨"
+      }]);
+    });
+
     return () => {
       socket.off("receive_message", onMessage)
       socket.off("stranger_typing", onTyping)
       socket.off("stranger_left", onStrangerLeftHandler)
       socket.off("message_blocked")
       socket.off("crisis_detected")
+      socket.off("breathing_prompt")
     }
   }, [roomId, existingSocket])
 
@@ -79,14 +89,23 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
   )
   
   const sendTyping = useCallback(() => {
-    const socket = socketRef.current
-    if (!socket || !roomId) return
-    socket.emit("typing", { roomId, isTyping: true })
-    clearTimeout(typingTimeoutRef.current)
+    const socket = socketRef.current;
+    if (!socket || !roomId) return;
+
+    // Only emit "true" if we haven't sent it recently
+    if (!typingTimeoutRef.current) {
+      console.log("Emitting typing: true");
+      socket.emit("typing", { roomId, isTyping: true });
+    }
+
+    // Clear any existing timeout and set a new one to stop after 2.5s of no typing
+    clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socketRef.current?.emit("typing", { roomId, isTyping: false })
-    }, 1500)
-  }, [roomId])
+      console.log("Auto-stop typing emit: false");
+      socket.emit("typing", { roomId, isTyping: false });
+      typingTimeoutRef.current = null;
+    }, 10000);  // ← increased to 2.5s so it doesn't flip off too fast
+  }, [roomId]);
 
   const leaveChat = useCallback(() => {
     const socket = socketRef.current

@@ -1,9 +1,12 @@
 "use client"
-
+import { Button } from "@/components/ui/button"
+import StarRating from "@/components/star-rating"   // ← adjust path if your folder is different, e.g. "@/components/StarRating"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Send, ArrowLeft, LogOut, Users, Globe, RefreshCw} from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useSocket } from "@/hooks/useSocket"
+import { Plus, Wind } from "lucide-react"  // Wind icon for breathing (or use Heart if you prefer)
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"  // you already have Dialog imported, but keep it
 
 function TypingIndicator() {
   return (
@@ -56,9 +59,14 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
       : "You're now chatting with a fellow student.",
   }
 
-  const [input, setInput] = useState("")
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const [input, setInput] = useState("")
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [exitType, setExitType] = useState(null);
+  const [showOptions, setShowOptions] = useState(false)
+  const [showBreathing, setShowBreathing] = useState(false)
 
   const { messages, strangerTyping, strangerLeft, sendMessage, sendTyping, leaveChat } = useSocket({
     roomId,
@@ -93,22 +101,46 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
 
   function handleNextChat() {
     if (!onNextChat) {
-      console.error("onNextChat prop is missing in ChatScreen!");
-      return;
+      console.error("onNextChat prop is missing!")
+      return
     }
-    console.log("Next Chat clicked — leaving room and re-queuing with", matchType);
+    setExitType("next")
+    setShowRatingDialog(true)
+  }
 
-    // Step 1: Leave current chat → triggers "stranger_left" on other user
-    leaveChat();
+  const proceedToExit = () => {
+    setShowRatingDialog(false)
+    setRating(0)
+    setExitType(null)  // reset
 
-    // Step 2: Trigger new matching (goes to WaitingRoom, which re-emits join_queue)
-    onNextChat(matchType);
+    leaveChat()  // always notify the other person that you left
+
+    // Then do the specific navigation/exit
+    if (exitType === "next") {
+      onNextChat(matchType)     // re-queue with same preferences
+    } else if (exitType === "leave") {
+      onDisconnect?.()          // go back to entry / home / whatever it did before
+    }
+  }
+
+  const handleSubmitRating = () => {
+    if (rating > 0) {
+      console.log(`Rated this chat ${rating}/5 (room: ${roomId}) - exit type: ${exitType}`)
+      // Future: socket.emit("chat_rating", { roomId, rating, exitType })
+    }
+    proceedToExit()
+  }
+
+  const handleSkipRating = () => {
+    proceedToExit()
   }
 
   function handleDisconnectClick() {
-    leaveChat()
-    onDisconnect?.()
+    setExitType("leave")
+    setShowRatingDialog(true)
   }
+
+  console.log("Rendering chat - strangerTyping is currently:", strangerTyping);
 
   return (
     <div
@@ -195,11 +227,26 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
             handleSend()
           }}
         >
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-10 rounded-full hover:bg-primary/10"
+            onClick={() => setShowOptions(true)}
+            aria-label="More options"
+          >
+            <Plus className="size-5 text-muted-foreground" />
+          </Button>
+
           <input
             ref={inputRef}
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              sendTyping();
+              // optional: console.log("Input changed - calling sendTyping");
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             className="h-10 flex-1 rounded-xl border border-border/40 bg-input/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-colors focus:border-primary/40 focus:bg-input/50"
@@ -216,6 +263,102 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
           </Button>
         </form>
       </div>
+        <Dialog 
+          open={showRatingDialog} 
+          onOpenChange={(open) => {
+            if (!open) handleSkipRating()   // clicking outside / pressing Esc → treat as skip
+          }}
+        >
+          <DialogContent className="sm:max-w-md text-center">
+            <DialogHeader className="space-y-3">
+              <DialogTitle className="text-xl">Rate Your Chat</DialogTitle>
+              <DialogDescription className="text-base">
+                How was the conversation? (optional)
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-8">
+              <StarRating 
+                value={rating} 
+                onChange={setRating} 
+                size={52} 
+              />
+            </div>
+
+            <DialogFooter className="flex justify-center gap-6">
+              <Button 
+                variant="outline" 
+                onClick={handleSkipRating}
+                className="min-w-[110px]"
+              >
+                Skip
+              </Button>
+              
+              <Button 
+                onClick={handleSubmitRating}
+                disabled={rating === 0}
+                className="min-w-[110px]"
+              >
+                Submit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Sheet open={showOptions} onOpenChange={setShowOptions}>
+          <SheetContent side="bottom" className="rounded-t-2xl pt-6">
+            <SheetHeader>
+              <SheetTitle className="text-left">Quick Actions</SheetTitle>
+            </SheetHeader>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <Button
+                variant="outline"
+                className="h-14 justify-start text-left px-4"
+                onClick={() => {
+                  setShowOptions(false)
+                  setShowBreathing(true)
+                  socket.emit("breathing_break", { roomId })  // tell the other person
+                }}
+              >
+                <Wind className="mr-3 size-5 text-blue-500" />
+                Take a Breathing Break
+              </Button>
+
+              {/* You can add more buttons later, e.g. */}
+              {/* <Button variant="outline" className="h-14 justify-start text-left px-4"> */}
+              {/*   <Heart className="mr-3 size-5 text-pink-500" /> */}
+              {/*   Share a Positive Affirmation */}
+              {/* </Button> */}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <Dialog open={showBreathing} onOpenChange={setShowBreathing}>
+          <DialogContent className="sm:max-w-md text-center">
+            <DialogHeader>
+              <DialogTitle>4-7-8 Breathing Break</DialogTitle>
+              <DialogDescription className="pt-2">
+                Inhale for 4 seconds, hold for 7 seconds, exhale for 8 seconds.<br />
+                Repeat 4–5 times to feel calmer.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-10">
+              <div className="mx-auto size-40 rounded-full bg-blue-100/30 flex items-center justify-center animate-pulse">
+                <Wind className="size-16 text-blue-600" />
+              </div>
+              <p className="mt-6 text-sm text-muted-foreground">
+                Pausing for some calm breaths 💙 You've got this.
+              </p>
+            </div>
+
+            <DialogFooter className="sm:justify-center">
+              <Button onClick={() => setShowBreathing(false)}>
+                I'm Done
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }
