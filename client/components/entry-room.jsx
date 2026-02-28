@@ -109,7 +109,7 @@ export function EntryCard({ onConnect }) {
 
         <div className="flex flex-col items-center gap-2 -mb-4">
           <div className="flex items-center justify-center gap-1.5 rounded-lg bg-primary/5 px-4 py-2.5 w-full">
-            <span className="text-xs text-primary/60">✦ AI-powered matchmaking — matched by shared interests</span>
+            <span className="text-xs text-primary/60">✦ OpenAi-powered matchmaking — matched by shared interests</span>
           </div>
           {onlineCount !== null && (
             <div className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 w-full">
