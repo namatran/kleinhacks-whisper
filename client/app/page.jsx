@@ -5,8 +5,6 @@ import { EntryCard } from "@/components/entry-room"
 import { WaitingRoom } from "@/components/waiting-room"
 import { ChatScreen } from "@/components/chat-room"
 
-// ... imports unchanged ...
-
 export default function Home() {
   const [screen, setScreen] = useState("entry")
   const [matchType, setMatchType] = useState(null)
