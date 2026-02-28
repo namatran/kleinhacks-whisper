@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, ArrowLeft, LogOut, Users, Globe,} from "lucide-react"
+import { Send, ArrowLeft, LogOut, Users, Globe, RefreshCw} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSocket } from "@/hooks/useSocket"
 
@@ -92,12 +92,17 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
   }
 
   function handleNextChat() {
-  if (!onNextChat) {
-    console.error("onNextChat prop is missing in ChatScreen!");
-    return;
-  }
-  console.log("Calling onNextChat with", matchType);
-  onNextChat(matchType);
+    if (!onNextChat) {
+      console.error("onNextChat prop is missing in ChatScreen!");
+      return;
+    }
+    console.log("Next Chat clicked — leaving room and re-queuing with", matchType);
+
+    // Step 1: Leave current chat → triggers "stranger_left" on other user
+    leaveChat();
+
+    // Step 2: Trigger new matching (goes to WaitingRoom, which re-emits join_queue)
+    onNextChat(matchType);
   }
 
   function handleDisconnectClick() {
@@ -110,32 +115,79 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
       className="flex h-svh w-full flex-col bg-background"
       style={{ animation: "fade-in 0.4s ease-out both" }}
     >
+      {/* Header – added smaller Next Chat button here */}
       <header className="flex shrink-0 items-center gap-3 border-b border-border/30 px-4 py-3">
-        <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={handleDisconnectClick}>
-          <ArrowLeft className="size-4" />
-        </Button>
+        {/* Left side: Stranger info */}
         <div className="flex flex-col">
           <span className="text-sm font-medium text-foreground">Stranger</span>
-          <span className="text-xs text-muted-foreground/60">{isSchool ? "From your school" : "Student somewhere"}</span>
+          <span className="text-xs text-muted-foreground/60">
+            {isSchool ? "From your school" : "Student somewhere"}
+          </span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+
+        {/* Right side: Status → Next Chat → Leave */}
+        <div className="ml-auto flex items-center gap-4">
+          {/* Status – moved leftmost */}
           <div className="flex items-center gap-1.5">
             <span className={`size-1.5 rounded-full ${strangerLeft ? "bg-destructive/60" : "bg-emerald-400/80"}`} />
-            <span className="text-xs text-muted-foreground/50">{strangerLeft ? "Left" : "Online"}</span>
+            <span className="text-xs text-muted-foreground/50">
+              {strangerLeft ? "Left" : "Online"}
+            </span>
           </div>
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground/60 hover:text-destructive" onClick={handleDisconnectClick}>
-            <LogOut className="size-3.5" />
+
+          {/* Next Chat button */}
+          <Button
+            variant="default"
+            size="sm"
+            className="
+              bg-primary text-primary-foreground 
+              hover:bg-primary/90 
+              hover:scale-105 
+              transition-all duration-200 
+              gap-1 px-3 py-1.5
+              shadow-sm
+            "
+            onClick={handleNextChat}
+            aria-label="Start a new chat"
+            title="Start a new chat"
+          >
+            <RefreshCw className="size-4" />
+            Next Chat
+          </Button>
+
+          {/* Leave button – now matches Next Chat style, but you already changed to primary */}
+          <Button
+            variant="default"
+            size="sm"
+            className="
+              bg-destructive text-primary-foreground 
+              hover:bg-destructive/90 
+              hover:scale-105 
+              transition-all duration-200 
+              gap-1 px-3 py-1.5
+              shadow-sm
+            "
+            onClick={handleDisconnectClick}
+            aria-label="Disconnect"
+            title="End this chat"
+          >
+            <LogOut className="size-4" />
+            Leave
           </Button>
         </div>
       </header>
 
+      {/* Messages area – unchanged */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 scroll-smooth">
-        {allMessages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
+        {allMessages.map((msg) => (
+          <MessageBubble key={msg.id} msg={msg} />
+        ))}
         {strangerTyping && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="shrink-0 border-t border-border/30 bg-card/50 px-4 py-4 backdrop-blur-sm space-y-4">
+      {/* Input area – removed the big Next Chat button from here */}
+      <div className="shrink-0 border-t border-border/30 bg-card/50 px-4 py-3 backdrop-blur-sm">
         <form
           className="flex items-center gap-2"
           onSubmit={(e) => {
@@ -163,15 +215,6 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
             <Send className="size-4" />
           </Button>
         </form>
-
-        <Button
-          size="lg"
-          onClick={handleNextChat}
-          className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
-        >
-          {isSchool ? <Users className="size-5 mr-2" /> : <Globe className="size-5 mr-2" />}
-          Next Chat
-        </Button>
       </div>
     </div>
   )
