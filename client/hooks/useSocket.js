@@ -56,7 +56,7 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
       setMessages((prev) => [...prev, {
         id: Date.now(),
         sender: "system",
-        text: "💙 If you're struggling, you're not alone. Text 988 (Suicide & Crisis Lifeline) or chat at 988lifeline.org"
+        text: "It sounds like you're going through something really tough. You don't have to face it alone. Someone who can help is at 988 (Suicide & Crisis Lifeline) or at 988lifeline.org"
       }])
     })
     
