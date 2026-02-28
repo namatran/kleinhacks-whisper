@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, ArrowLeft, LogOut } from "lucide-react"
+import { Send, ArrowLeft, LogOut, Users, Globe, Users, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSocket } from "@/hooks/useSocket"
 
@@ -45,8 +45,28 @@ function MessageBubble({ msg }) {
   )
 }
 
-export function ChatScreen({ matchType, roomId, socket, onDisconnect }) {
+export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket }) {
   const isSchool = matchType === "school"
+
+  const initialSystemMessage = {
+    id: 1,
+    sender: "system",
+    text: isSchool
+      ? "You're now chatting with someone from your school."
+      : "You're now chatting with a fellow student.",
+  }
+
+  const [messages, setMessages] = useState([initialSystemMessage])
+
+  const initialSystemMessage = {
+    id: 1,
+    sender: "system",
+    text: isSchool
+      ? "You're now chatting with someone from your school."
+      : "You're now chatting with a fellow student.",
+  }
+
+  const [messages, setMessages] = useState([initialSystemMessage])
   const [input, setInput] = useState("")
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -82,13 +102,25 @@ export function ChatScreen({ matchType, roomId, socket, onDisconnect }) {
     }
   }
 
+  function handleNextChat() {
+  if (!onNextChat) {
+    console.error("onNextChat prop is missing in ChatScreen!");
+    return;
+  }
+  console.log("Calling onNextChat with", matchType);
+  onNextChat(matchType);
+  }
+
   function handleDisconnectClick() {
     leaveChat()
     onDisconnect?.()
   }
 
   return (
-    <div className="flex h-svh w-full flex-col bg-background" style={{ animation: "fade-in 0.4s ease-out both" }}>
+    <div
+      className="flex h-svh w-full flex-col bg-background"
+      style={{ animation: "fade-in 0.4s ease-out both" }}
+    >
       <header className="flex shrink-0 items-center gap-3 border-b border-border/30 px-4 py-3">
         <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={handleDisconnectClick}>
           <ArrowLeft className="size-4" />
@@ -114,30 +146,43 @@ export function ChatScreen({ matchType, roomId, socket, onDisconnect }) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="shrink-0 border-t border-border/30 bg-card/50 px-4 py-3 backdrop-blur-sm">
-        {strangerLeft ? (
-          <div className="flex items-center justify-center gap-3 py-1">
-            <span className="text-sm text-muted-foreground/60">Stranger has left</span>
-            <Button size="sm" onClick={handleDisconnectClick} className="rounded-lg">
-              Find someone new
-            </Button>
-          </div>
-        ) : (
-          <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); handleSend() }}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => { setInput(e.target.value); sendTyping() }}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
-              className="h-10 flex-1 rounded-xl border border-border/40 bg-input/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-colors focus:border-primary/40 focus:bg-input/50"
-            />
-            <Button type="submit" size="icon" disabled={!input.trim()} className="size-10 shrink-0 rounded-xl bg-primary/90 hover:bg-primary text-primary-foreground disabled:opacity-30 transition-all">
-              <Send className="size-4" />
-            </Button>
-          </form>
-        )}
+      <div className="shrink-0 border-t border-border/30 bg-card/50 px-4 py-4 backdrop-blur-sm space-y-4">
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSend()
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="h-10 flex-1 rounded-xl border border-border/40 bg-input/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-colors focus:border-primary/40 focus:bg-input/50"
+            aria-label="Message input"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!input.trim()}
+            className="size-10 shrink-0 rounded-xl bg-primary/90 hover:bg-primary text-primary-foreground disabled:opacity-30 transition-all"
+            aria-label="Send message"
+          >
+            <Send className="size-4" />
+          </Button>
+        </form>
+
+        <Button
+          size="lg"
+          onClick={handleNextChat}
+          className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
+        >
+          {isSchool ? <Users className="size-5 mr-2" /> : <Globe className="size-5 mr-2" />}
+          Next Chat
+        </Button>
       </div>
     </div>
   )
