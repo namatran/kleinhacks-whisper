@@ -21,12 +21,8 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
     console.log("useSocket effect — socket:", socket?.id, "roomId:", roomId, "connected:", socket?.connected)
     if (!socket || !roomId) return
 
-    function onMessage({ message, timestamp, fromSelf }) {
-      setMessages((prev) => [...prev, { 
-        id: timestamp, 
-        sender: fromSelf ? "you" : "stranger", 
-        text: message 
-      }])
+    function onMessage({ message, timestamp }) {
+      setMessages((prev) => [...prev, { id: timestamp, sender: "stranger", text: message }])
     }
 
     function onTyping({ isTyping }) {
@@ -43,41 +39,27 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
     socket.on("receive_message", onMessage)
     socket.on("stranger_typing", onTyping)
     socket.on("stranger_left", onStrangerLeftHandler)
-    socket.on("message_blocked", () => {
-      setMessages((prev) => [...prev, {
-        id: Date.now(),
-        sender: "system",
-        text: "⚠️ Message removed — keep it respectful."
-      }])
-    })
-
-    socket.on("crisis_detected", () => {
-      setMessages((prev) => [...prev, {
-        id: Date.now(),
-        sender: "system",
-        text: "💙 If you're struggling, you're not alone. Text 988 (Suicide & Crisis Lifeline) or chat at 988lifeline.org"
-      }])
-    })
 
     return () => {
       socket.off("receive_message", onMessage)
       socket.off("stranger_typing", onTyping)
       socket.off("stranger_left", onStrangerLeftHandler)
-      socket.off("message_blocked")
-      socket.off("crisis_detected")
     }
   }, [roomId, existingSocket])
 
   const sendMessage = useCallback(
     (text) => {
-      const socket = socketRef.current;
-      if (!socket || !roomId || !text.trim()) return;
+      const socket = socketRef.current
+      console.log("sendMessage — socket:", socket?.id, "roomId:", roomId)
+      if (!socket || !roomId || !text.trim()) return
+      const msg = { id: Date.now(), sender: "you", text: text.trim() }
+      setMessages((prev) => [...prev, msg])
       socket.emit("send_message", { roomId, message: text.trim() })
       socket.emit("typing", { roomId, isTyping: false })
     },
     [roomId]
   )
-  
+
   const sendTyping = useCallback(() => {
     const socket = socketRef.current
     if (!socket || !roomId) return
