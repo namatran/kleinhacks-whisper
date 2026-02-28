@@ -5,6 +5,8 @@ import { EntryCard } from "@/components/entry-card"
 import { WaitingRoom } from "@/components/waiting-room"
 import { ChatScreen } from "@/components/chat-screen"
 
+// ... imports unchanged ...
+
 export default function Home() {
   const [screen, setScreen] = useState("entry")
   const [matchType, setMatchType] = useState(null)
@@ -24,7 +26,13 @@ export default function Home() {
   }
 
   if (screen === "chat") {
-    return <ChatScreen matchType={matchType} onDisconnect={handleDisconnect} />
+    return (
+      <ChatScreen 
+        matchType={matchType} 
+        onDisconnect={handleDisconnect}
+        onNextChat={handleConnect}
+      />
+    )
   }
 
   return (

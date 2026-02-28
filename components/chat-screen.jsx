@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, ArrowLeft, LogOut } from "lucide-react"
+import { Send, ArrowLeft, LogOut, Users, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 function TypingIndicator() {
@@ -59,17 +59,18 @@ function MessageBubble({ msg }) {
   )
 }
 
-export function ChatScreen({ matchType, onDisconnect }) {
+export function ChatScreen({ matchType, onDisconnect, onNextChat }) {
   const isSchool = matchType === "school"
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: "system",
-      text: isSchool
-        ? "You're now chatting with someone from your school."
-        : "You're now chatting with a fellow student.",
-    },
-  ])
+
+  const initialSystemMessage = {
+    id: 1,
+    sender: "system",
+    text: isSchool
+      ? "You're now chatting with someone from your school."
+      : "You're now chatting with a fellow student.",
+  }
+
+  const [messages, setMessages] = useState([initialSystemMessage])
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef(null)
@@ -134,12 +135,20 @@ export function ChatScreen({ matchType, onDisconnect }) {
     }
   }
 
+  function handleNextChat() {
+  if (!onNextChat) {
+    console.error("onNextChat prop is missing in ChatScreen!");
+    return;
+  }
+  console.log("Calling onNextChat with", matchType);
+  onNextChat(matchType);
+  }
+
   return (
     <div
       className="flex h-svh w-full flex-col bg-background"
       style={{ animation: "fade-in 0.4s ease-out both" }}
     >
-      {/* Header */}
       <header className="flex shrink-0 items-center gap-3 border-b border-border/30 px-4 py-3">
         <Button
           variant="ghost"
@@ -175,7 +184,6 @@ export function ChatScreen({ matchType, onDisconnect }) {
         </div>
       </header>
 
-      {/* Messages area */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 scroll-smooth">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} msg={msg} />
@@ -184,8 +192,7 @@ export function ChatScreen({ matchType, onDisconnect }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
-      <div className="shrink-0 border-t border-border/30 bg-card/50 px-4 py-3 backdrop-blur-sm">
+      <div className="shrink-0 border-t border-border/30 bg-card/50 px-4 py-4 backdrop-blur-sm space-y-4">
         <form
           className="flex items-center gap-2"
           onSubmit={(e) => {
@@ -213,6 +220,15 @@ export function ChatScreen({ matchType, onDisconnect }) {
             <Send className="size-4" />
           </Button>
         </form>
+
+        <Button
+          size="lg"
+          onClick={handleNextChat}
+          className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
+        >
+          {isSchool ? <Users className="size-5 mr-2" /> : <Globe className="size-5 mr-2" />}
+          Next Chat
+        </Button>
       </div>
     </div>
   )
