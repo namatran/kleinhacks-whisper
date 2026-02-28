@@ -45,7 +45,7 @@ function MessageBubble({ msg }) {
   )
 }
 
-export function ChatScreen({ matchType, matchReason, icebreaker, onDisconnect, onNextChat, roomId, socket }) {  
+export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory, onDisconnect, onNextChat, roomId, socket }) {
   const isSchool = matchType === "school"
 
   const initialSystemMessage = {
@@ -66,9 +66,9 @@ export function ChatScreen({ matchType, matchReason, icebreaker, onDisconnect, o
   })
 
   const systemText = {
-    "same-school-same-interest": "You're chatting with someone from your school with similar interests!",
+    "same-school-same-interest": `You're chatting with someone from your school — you're both into ${sharedCategory}!`,    
     "same-school-diff-interest": "You're chatting with someone from your school!",
-    "same-interest-diff-school": "You're chatting with someone from a different school with similar interests!",
+    "same-interest-diff-school": `You're chatting with someone from another school - you're both into ${sharedCategory}!`,
     "diff-school-diff-interest": "You're chatting with a random fellow student!",
   }
 

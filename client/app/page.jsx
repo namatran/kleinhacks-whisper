@@ -15,6 +15,7 @@ export default function Home() {
   const [roomId, setRoomId] = useState(null)
   const [socket, setSocket] = useState(null)
   const [icebreaker, setIcebreaker] = useState(null)
+  const [sharedCategory, setSharedCategory] = useState(null)
 
   function handleConnect(type, userEmail, preferSchool, userInterest) {
     setMatchType(type)
@@ -23,12 +24,13 @@ export default function Home() {
     setInterest(userInterest || "")
     setScreen("waiting")
   }
-
-  const handleMatched = useCallback((rid, sock, reason, ice) => {
+  
+  const handleMatched = useCallback((rid, sock, reason, ice, theirInterest, shared) => {
     setRoomId(rid)
     setSocket(sock)
     setMatchReason(reason)
     setIcebreaker(ice)
+    setSharedCategory(shared)
     setScreen("chat")
   }, [])
 
@@ -50,6 +52,7 @@ export default function Home() {
         socket={socket}
         matchReason={matchReason}
         icebreaker={icebreaker}
+        sharedCategory={sharedCategory}
         onDisconnect={handleDisconnect}
         onNextChat={(type) => handleConnect(type, email, preferSameSchool, interest)}
       />

@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import express from "express";
 import { createServer } from  "http";
@@ -31,12 +30,6 @@ Interest: "${interest.trim()}"`
 }
 
 async function generateIcebreaker(user1, user2) {
-  const sharedCategory = user1.category && user1.category === user2.category;
-  
-  if (sharedCategory) {
-    return `You're both interested in ${user1.category}!`;
-  }
-
   try {
     const context = [
       user1.interest ? `Person 1 is into: ${user1.interest}` : null,
@@ -58,6 +51,24 @@ Write a single, short, friendly icebreaker question or conversation starter (max
     console.error("[AI] Icebreaker failed:", e.message);
     return null;
   }
+}
+
+// Rate limiting: max 5 joins per IP per minute
+const ipJoinCount = new Map();
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = ipJoinCount.get(ip) || { count: 0, resetAt: now + 60000 };
+  
+  if (now > entry.resetAt) {
+    entry.count = 0;
+    entry.resetAt = now + 60000;
+  }
+  
+  entry.count++;
+  ipJoinCount.set(ip, entry);
+  
+  return entry.count > 5;
 }
 
 leoProfanity.loadDictionary();
@@ -116,6 +127,18 @@ io.on("connection", (socket) => {
 
   // JOIN QUEUE
   socket.on("join_queue", async ({ email, preferSameSchool, interest }) => {
+    const ip = socket.handshake.headers["x-forwarded-for"] || socket.handshake.address;
+    
+    if (isRateLimited(ip)) {
+      console.log(`[RATE LIMIT] ${ip} blocked`);
+      socket.emit("error", { message: "Too many requests. Please wait a minute." });
+      return;
+    }
+
+    if (!email || !email.includes("@")) {
+      socket.emit("error", { message: "Invalid email." });
+      return;
+    }
     if (!email || !email.includes("@")) {
       socket.emit("error", { message: "Invalid email." });
       return;
@@ -213,8 +236,16 @@ async function attemptMatch(socketId, fallback = false) {
   const roomId = `room_${Date.now()}`;
   rooms[roomId] = [socketId, match.socketId];
 
-  io.to(socketId).emit("match_found", { roomId, reason, icebreaker });
-  io.to(match.socketId).emit("match_found", { roomId, reason, icebreaker });
+  io.to(socketId).emit("match_found", { 
+    roomId, reason, icebreaker,
+    theirInterest: match.interest,
+    sharedCategory: user.category === match.category ? user.category : null
+  });
+  io.to(match.socketId).emit("match_found", { 
+    roomId, reason, icebreaker,
+    theirInterest: user.interest,
+    sharedCategory: user.category === match.category ? user.category : null
+  });
 
   console.log(`[MATCH] Room ${roomId}: ${socketId} <-> ${match.socketId} (${reason}) | icebreaker: ${icebreaker}`);
 }
