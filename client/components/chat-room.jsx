@@ -7,6 +7,11 @@ import { useSocket } from "@/hooks/useSocket"
 import { Plus, Wind } from "lucide-react"  // Wind icon for breathing (or use Heart if you prefer)
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"  // you already have Dialog imported, but keep it
+import { Flag } from "lucide-react"  // flag icon for report
+import { Textarea } from "@/components/ui/textarea"  // shadcn textarea
+import { Label } from "@/components/ui/label"  // optional label for the report textarea
+import { useToast } from "@/components/ui/use-toast"
+import { Smile, Frown, Meh, Heart, Angry, Coffee, Zap, Cloud } from "lucide-react"
 
 function TypingIndicator() {
   return (
@@ -35,12 +40,36 @@ function MessageBubble({ msg }) {
       </div>
     )
   }
+
   const isYou = msg.sender === "you"
+  const isMood = msg.isMoodDeclaration === true
+
+  // Debug log to confirm when mood flag is detected
+  if (isMood) {
+    console.log("Mood message detected in bubble:", msg.text)
+  }
+
   return (
-    <div className={`flex ${isYou ? "justify-end" : "justify-start"}`} style={{ animation: "message-in 0.25s ease-out both" }}>
+    <div 
+      className={`flex ${isYou ? "justify-end" : "justify-start"}`} 
+      style={{ animation: "message-in 0.25s ease-out both" }}
+    >
       <div className={`flex max-w-[80%] flex-col gap-1 ${isYou ? "items-end" : "items-start"}`}>
-        <span className="px-1 text-[11px] font-medium text-muted-foreground/50">{isYou ? "You" : "Stranger"}</span>
-        <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${isYou ? "rounded-br-md bg-primary/90 text-primary-foreground" : "rounded-bl-md bg-secondary/80 text-secondary-foreground"}`}>
+        <span className="px-1 text-[11px] font-medium text-muted-foreground/50">
+          {isYou ? "You" : "Stranger"}
+        </span>
+
+        <div 
+          className={`
+            rounded-2xl px-4 py-2.5 leading-relaxed
+            ${isYou 
+              ? "rounded-br-md bg-primary/90 text-primary-foreground" 
+              : "rounded-bl-md bg-secondary/80 text-secondary-foreground"}
+            ${isMood 
+              ? "!bg-gray-300/90 !text-gray-900 !text-base !font-medium border border-gray-400 shadow-sm" 
+              : ""}
+          `}
+        >
           {msg.text}
         </div>
       </div>
@@ -67,11 +96,20 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
   const [exitType, setExitType] = useState(null);
   const [showOptions, setShowOptions] = useState(false)
   const [showBreathing, setShowBreathing] = useState(false)
+  const [showReportDialog, setShowReportDialog] = useState(false)
+  const [reportReason, setReportReason] = useState("")  // text input value
+  const { toast } = useToast()
+  const [showMoodSheet, setShowMoodSheet] = useState(false)
 
-  const { messages, strangerTyping, strangerLeft, sendMessage, sendTyping, leaveChat } = useSocket({
-    roomId,
-    socket,
-  })
+  const { 
+    messages, 
+    setMessages, 
+    strangerTyping, 
+    strangerLeft, 
+    sendMessage, 
+    sendTyping, 
+    leaveChat 
+  } = useSocket({ roomId, socket })
 
   const systemText = {
     "same-school-same-interest": `You're chatting with someone from your school — you're both into ${sharedCategory}!`,    
@@ -167,6 +205,17 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
             {isSchool ? "From your school" : "Student somewhere"}
           </span>
         </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+          onClick={() => setShowReportDialog(true)}
+          aria-label="Report this user"
+          title="Report this user"
+        >
+          <Flag className="size-4" />
+        </Button>
 
         {/* Right side: Status → Next Chat → Leave */}
         <div className="ml-auto flex items-center gap-4">
@@ -316,30 +365,102 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
           </DialogContent>
         </Dialog>
         <Sheet open={showOptions} onOpenChange={setShowOptions}>
-          <SheetContent side="bottom" className="rounded-t-2xl pt-6">
-            <SheetHeader>
-              <SheetTitle className="text-left">Quick Actions</SheetTitle>
+          <SheetContent side="bottom" className="rounded-t-2xl pt-0"> {/* reduced from pt-6 to pt-4 */}
+            <SheetHeader className="pb-4"> {/* added pb-2 for tight bottom spacing */}
+              <SheetTitle className="text-left text-lg">Quick Actions</SheetTitle> {/* optional: smaller text size */}
             </SheetHeader>
 
-            <div className="mt-6 flex flex-col gap-3">
+            <div className="mt-3 flex flex-wrap justify-center gap-4"> {/* reduced mt-6 to mt-3 */}
+              {/* Breathing Break button – square and compact */}
               <Button
                 variant="outline"
-                className="h-14 justify-start text-left px-4"
+                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-blue-50/50 border-blue-200"
                 onClick={() => {
-                  setShowOptions(false)
-                  setShowBreathing(true)
-                  socket.emit("breathing_break", { roomId })  // tell the other person
+                  setShowOptions(false);
+                  setShowBreathing(true);
+
+                  setMessages(prev => [...prev, {
+                    id: Date.now(),
+                    sender: "system",
+                    text: "Taking a moment to breathe deeply 💙 You're doing great."
+                  }]);
+
+                  socket.emit("breathing_break", { roomId });
                 }}
               >
-                <Wind className="mr-3 size-5 text-blue-500" />
-                Take a Breathing Break
+                <Wind className="size-8 text-blue-600" />
+                <span className="text-xs font-medium leading-tight">
+                  Breathing<br />Break
+                </span>
               </Button>
+                
+              <Button
+                variant="outline"
+                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-purple-50/50 border-purple-200"
+                onClick={() => {
+                  setShowMoodSheet(true)
+                }}
+              >
+                <Smile className="size-8 text-purple-600" />
+                <span className="text-xs font-medium leading-tight">
+                  Declare<br />Mood
+                </span>
+              </Button>
+              {/* Add more square buttons here later if needed */}
+            </div>
+          </SheetContent>
+        </Sheet>
 
-              {/* You can add more buttons later, e.g. */}
-              {/* <Button variant="outline" className="h-14 justify-start text-left px-4"> */}
-              {/*   <Heart className="mr-3 size-5 text-pink-500" /> */}
-              {/*   Share a Positive Affirmation */}
-              {/* </Button> */}
+        <Sheet open={showMoodSheet} onOpenChange={setShowMoodSheet}>
+          <SheetContent side="bottom" className="rounded-t-2xl pt-4">
+            <SheetHeader className="pb-2">
+              <SheetTitle className="text-left text-lg">How are you feeling right now?</SheetTitle>
+            </SheetHeader>
+
+            <div className="mt-4 grid grid-cols-4 gap-3">
+              {[
+                { emoji: <Smile className="size-10 text-green-600" />, label: "Happy", value: "happy", emojiChar: "😊" },
+                { emoji: <Heart className="size-10 text-pink-600" />, label: "Loved", value: "loved", emojiChar: "💖" },
+                { emoji: <Coffee className="size-10 text-amber-600" />, label: "Calm", value: "calm", emojiChar: "☕" },
+                { emoji: <Meh className="size-10 text-yellow-600" />, label: "Okay", value: "okay", emojiChar: "😐" },
+                { emoji: <Frown className="size-10 text-blue-600" />, label: "Sad", value: "sad", emojiChar: "😔" },
+                { emoji: <Angry className="size-10 text-red-600" />, label: "Frustrated", value: "frustrated", emojiChar: "😠" },
+                { emoji: <Zap className="size-10 text-orange-600" />, label: "Anxious", value: "anxious", emojiChar: "😟" },
+                { emoji: <Cloud className="size-10 text-gray-600" />, label: "Tired", value: "tired", emojiChar: "☁️" },
+              ].map((moodItem) => (
+                <Button
+                  key={moodItem.value}
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-1 p-2 hover:bg-gray-50"
+                  onClick={() => {
+                    setShowMoodSheet(false)
+
+                    const moodText = `I'm feeling ${moodItem.label} ${moodItem.emojiChar}`
+
+                    // Add to local messages (sender sees their own declaration as grey bubble)
+                    setMessages(prev => {
+                      console.log("Adding mood message to sender:", prev.length + 1)
+                      return [...prev, {
+                      id: Date.now(),
+                      sender: "you",
+                      text: moodText,
+                      isMoodDeclaration: true
+                      }]
+                    })
+
+                    // Send to other user
+                    console.log("Emitting declare_mood:", { roomId, mood: moodItem.value, emoji: moodItem.emojiChar })
+                    socket.emit("declare_mood", {
+                      roomId,
+                      mood: moodItem.value,
+                      emoji: moodItem.emojiChar
+                    })
+                  }}
+                >
+                  {moodItem.emoji}
+                  <span className="text-xs">{moodItem.label}</span>
+                </Button>
+              ))}
             </div>
           </SheetContent>
         </Sheet>
@@ -366,6 +487,58 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
             <DialogFooter className="sm:justify-center">
               <Button onClick={() => setShowBreathing(false)}>
                 I'm Done
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Report this conversation</DialogTitle>
+              <DialogDescription>
+                Please describe what happened. Your report helps keep Whisper safe.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4">
+              <Label htmlFor="report-reason" className="mb-2 block text-sm font-medium">
+                Reason / Details
+              </Label>
+              <Textarea
+                id="report-reason"
+                placeholder="Tell us what happened... (e.g., inappropriate behavior, spam, etc.)"
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="min-h-[100px] resize-none"
+              />
+            </div>
+
+            <DialogFooter className="flex justify-between sm:justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowReportDialog(false)
+                  setReportReason("")  // clear on cancel
+                }}
+              >
+                Cancel
+              </Button>
+              <Button   
+                variant="destructive"
+                disabled={!reportReason.trim()}
+                onClick={() => {
+                  console.log("Report submitted:", reportReason)  // keep your proof-of-concept log
+                  toast({
+                    title: "Report Sent",
+                    description: "Thank you — our team will review this to keep Whisper safe.",
+                    duration: 5000,
+                  })
+                  setShowReportDialog(false)
+                  setReportReason("")
+                }}
+              >
+                Submit Report
               </Button>
             </DialogFooter>
           </DialogContent>

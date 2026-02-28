@@ -52,6 +52,19 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
       }])
     })
 
+    socket.on("mood_declared", ({ mood, emoji }) => {
+      console.log("Received mood_declared:", { mood, emoji });
+
+      const displayText = `Stranger is feeling ${mood || "unknown"} ${emoji || ""}`;
+
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        sender: "stranger",
+        text: displayText,
+        isMoodDeclaration: true
+      }]);
+    });
+
     socket.on("crisis_detected", () => {
       setMessages((prev) => [...prev, {
         id: Date.now(),
@@ -76,6 +89,7 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
       socket.off("message_blocked")
       socket.off("crisis_detected")
       socket.off("breathing_prompt")
+      socket.off("mood_declared");
     }
   }, [roomId, existingSocket])
 
@@ -115,5 +129,13 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
     socket.disconnect()
   }, [roomId])
 
-  return { messages, strangerTyping, strangerLeft, sendMessage, sendTyping, leaveChat }
+  return { 
+    messages, 
+    setMessages,               
+    strangerTyping, 
+    strangerLeft, 
+    sendMessage, 
+    sendTyping, 
+    leaveChat 
+  }
 }

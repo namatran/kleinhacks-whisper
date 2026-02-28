@@ -155,7 +155,33 @@ io.on("connection", (socket) => {
     if (!rooms[roomId]) return;
     const room = rooms[roomId];
     if (!room.includes(socket.id)) room.push(socket.id);
+    socket.join(roomId); // Ensure socket.io knows this socket is in the room
     console.log(`[REJOIN] ${socket.id} rejoined room ${roomId}`);
+  });
+
+  // DECLARE MOOD
+  socket.on("declare_mood", ({ roomId, mood, emoji }) => {
+    console.log(`[MOOD] Received from ${socket.id} in room ${roomId}: ${mood} ${emoji}`);
+
+    const room = rooms[roomId];
+    if (!room) {
+      console.log("[MOOD ERROR] Room not found");
+      return;
+    }
+
+    const recipientId = room.find(id => id !== socket.id);
+    if (!recipientId) {
+      console.log("[MOOD ERROR] No recipient found");
+      return;
+    }
+
+    console.log(`[MOOD] Sending to ${recipientId}: Your stranger is feeling ${mood} ${emoji}`);
+
+    // Send directly to the recipient socket using io.to()
+    io.to(recipientId).emit("mood_declared", {
+      mood,
+      emoji
+    });
   });
 
   // SEND MESSAGE
