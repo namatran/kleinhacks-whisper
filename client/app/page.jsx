@@ -1,17 +1,18 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { EntryCard } from "@/components/entry-room"  // ← note: you had entry-room, probably typo?
+import { EntryCard } from "@/components/entry-room"
 import { WaitingRoom } from "@/components/waiting-room"
-import { ChatScreen } from "@/components/chat-room"   // ← note: chat-room.jsx
+import { ChatScreen } from "@/components/chat-room"
+import { Toaster } from "@/components/ui/toaster"  // make sure this import exists
 
 export default function Home() {
   const [screen, setScreen] = useState("entry")
   const [matchType, setMatchType] = useState(null)
-  const [email, setEmail] = useState("")                     // string, not null
+  const [email, setEmail] = useState("")
   const [interest, setInterest] = useState("")
   const [matchReason, setMatchReason] = useState(null)
-  const [preferSameSchool, setPreferSameSchool] = useState(false)  // ← added this
+  const [preferSameSchool, setPreferSameSchool] = useState(false)
   const [roomId, setRoomId] = useState(null)
   const [socket, setSocket] = useState(null)
   const [icebreaker, setIcebreaker] = useState(null)
@@ -62,6 +63,7 @@ export default function Home() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-background px-4 py-8">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/[0.06] via-transparent to-transparent" />
+
       <div className="relative z-10 w-full max-w-md">
         {screen === "entry" && (
           <EntryCard 
@@ -80,7 +82,22 @@ export default function Home() {
             onExit={handleDisconnect}
           />
         )}
+        {screen === "chat" && (
+          <ChatScreen
+            matchType={matchType}
+            roomId={roomId}
+            socket={socket}
+            matchReason={matchReason}
+            icebreaker={icebreaker}
+            sharedCategory={sharedCategory}
+            onDisconnect={handleDisconnect}
+            onNextChat={(type) => handleConnect(type, email, preferSameSchool, interest)}
+          />
+        )}
       </div>
+
+      {/* Always render Toaster here – outside conditionals */}
+      <Toaster />
     </main>
   )
 }
