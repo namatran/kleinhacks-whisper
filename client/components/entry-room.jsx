@@ -29,10 +29,10 @@ export function EntryCard({ onConnect }) {
     return true
   }
 
-  function handleConnect(type) {
-    if (validateEmail(email)) {
-      localStorage.setItem("whisper_email", email)
-      onConnect?.(type, email)
+  function handleConnect(type, userEmail, preferSchool) {
+    if (validateEmail(userEmail)) {
+      localStorage.setItem("whisper_email", userEmail)
+      onConnect?.(type, userEmail, preferSchool)
     }
   }
 
@@ -78,7 +78,7 @@ export function EntryCard({ onConnect }) {
         <div className="flex flex-col gap-3">
           <Button
             size="lg"
-            onClick={() => handleConnect("school")}
+            onClick={() => handleConnect("school", email, true)}  // true = prefer same school
             className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
           >
             <Users className="size-4" />
@@ -88,7 +88,7 @@ export function EntryCard({ onConnect }) {
           <Button
             variant="outline"
             size="lg"
-            onClick={() => handleConnect("any")}
+            onClick={() => handleConnect("any", email, false)}   // false = no school preference
             className="h-12 w-full rounded-lg border-border/60 text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground transition-colors"
           >
             <Globe className="size-4" />
