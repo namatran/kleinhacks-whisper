@@ -433,28 +433,28 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-1 p-2 hover:bg-gray-50"
                   onClick={() => {
-                    setShowMoodSheet(false)
+                    setShowMoodSheet(false);
+                    setShowOptions(false); // Also close quick actions
 
-                    const moodText = `I'm feeling ${moodItem.label} ${moodItem.emojiChar}`
+                    const moodText = `I'm feeling ${moodItem.label} ${moodItem.emojiChar}`;
 
-                    // Add to local messages (sender sees their own declaration as grey bubble)
                     setMessages(prev => {
-                      console.log("Adding mood message to sender:", prev.length + 1)
+                      console.log("Adding mood message to sender:", prev.length + 1);
                       return [...prev, {
-                      id: Date.now(),
-                      sender: "you",
-                      text: moodText,
-                      isMoodDeclaration: true
-                      }]
-                    })
+                        id: Date.now(),
+                        sender: "you",
+                        text: moodText,
+                        isMoodDeclaration: true
+                      }];
+                    });
 
                     // Send to other user
-                    console.log("Emitting declare_mood:", { roomId, mood: moodItem.value, emoji: moodItem.emojiChar })
+                    console.log("Emitting declare_mood:", { roomId, mood: moodItem.value, emoji: moodItem.emojiChar });
                     socket.emit("declare_mood", {
                       roomId,
                       mood: moodItem.value,
                       emoji: moodItem.emojiChar
-                    })
+                    });
                   }}
                 >
                   {moodItem.emoji}
