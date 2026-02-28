@@ -8,23 +8,45 @@ import { ChatScreen } from "@/components/chat-room"
 export default function Home() {
   const [screen, setScreen] = useState("entry")
   const [matchType, setMatchType] = useState(null)
+  const [email, setEmail] = useState(null)
+  const [roomId, setRoomId] = useState(null)
+  const [socket, setSocket] = useState(null)
 
-  function handleConnect(type) {
+  function handleConnect(type, userEmail) {
     setMatchType(type)
+    setEmail(userEmail)
     setScreen("waiting")
   }
 
-  const handleMatched = useCallback(() => {
+  const handleMatched = useCallback((rid, sock) => {
+    setRoomId(rid)
+    setSocket(sock)
     setScreen("chat")
   }, [])
 
+  function handleExit() {
+    setMatchType(null)
+    setEmail(null)
+    setScreen("entry")
+  }
+
   function handleDisconnect() {
     setMatchType(null)
+    setEmail(null)
+    setRoomId(null)
+    setSocket(null)
     setScreen("entry")
   }
 
   if (screen === "chat") {
-    return <ChatScreen matchType={matchType} onDisconnect={handleDisconnect} />
+    return (
+      <ChatScreen
+        matchType={matchType}
+        roomId={roomId}
+        socket={socket}
+        onDisconnect={handleDisconnect}
+      />
+    )
   }
 
   return (
@@ -33,7 +55,13 @@ export default function Home() {
       <div className="relative z-10 w-full max-w-md">
         {screen === "entry" && <EntryCard onConnect={handleConnect} />}
         {screen === "waiting" && (
-          <WaitingRoom matchType={matchType} onMatched={handleMatched} />
+          <WaitingRoom
+            matchType={matchType}
+            email={email}
+            preferSameSchool={matchType === "school"}
+            onMatched={handleMatched}
+            onExit={handleExit}
+          />
         )}
       </div>
     </main>
