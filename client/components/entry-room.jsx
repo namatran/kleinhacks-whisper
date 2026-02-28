@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button"
 import { MessageCircle, Shield, Users, Globe } from "lucide-react"
 
 export function EntryCard({ onConnect }) {
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(() => {
+    // Remember email domain from localStorage
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("whisper_email") || ""
+    }
+    return ""
+  })
   const [error, setError] = useState("")
 
   function validateEmail(value) {
@@ -15,23 +21,18 @@ export function EntryCard({ onConnect }) {
       setError("Please enter your school email")
       return false
     }
-    if (!value.includes(".edu")) {
-      setError("Please use a valid .edu email address")
+    if (!value.includes("@")) {
+      setError("Please enter a valid email address")
       return false
     }
     setError("")
     return true
   }
 
-  function handleSchoolChat() {
+  function handleConnect(type) {
     if (validateEmail(email)) {
-      onConnect?.("school")
-    }
-  }
-
-  function handleAnyChat() {
-    if (validateEmail(email)) {
-      onConnect?.("any")
+      localStorage.setItem("whisper_email", email)
+      onConnect?.(type, email)
     }
   }
 
@@ -77,7 +78,7 @@ export function EntryCard({ onConnect }) {
         <div className="flex flex-col gap-3">
           <Button
             size="lg"
-            onClick={handleSchoolChat}
+            onClick={() => handleConnect("school")}
             className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
           >
             <Users className="size-4" />
@@ -87,7 +88,7 @@ export function EntryCard({ onConnect }) {
           <Button
             variant="outline"
             size="lg"
-            onClick={handleAnyChat}
+            onClick={() => handleConnect("any")}
             className="h-12 w-full rounded-lg border-border/60 text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground transition-colors"
           >
             <Globe className="size-4" />
