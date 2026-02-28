@@ -59,6 +59,7 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
         text: "💙 If you're struggling, you're not alone. Text 988 (Suicide & Crisis Lifeline) or chat at 988lifeline.org"
       }])
     })
+    
 
     socket.on("breathing_prompt", ({ message }) => {
       setMessages((prev) => [...prev, {

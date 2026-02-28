@@ -48,7 +48,7 @@ function MessageBubble({ msg }) {
   )
 }
 
-export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket }) {
+export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory, onDisconnect, onNextChat, roomId, socket }) {
   const isSchool = matchType === "school"
 
   const initialSystemMessage = {
@@ -73,8 +73,19 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
     socket,
   })
 
+  const systemText = {
+    "same-school-same-interest": `You're chatting with someone from your school — you're both into ${sharedCategory}!`,    
+    "same-school-diff-interest": "You're chatting with someone from your school!",
+    "same-interest-diff-school": `You're chatting with someone from another school - you're both into ${sharedCategory}!`,
+    "diff-school-diff-interest": "You're chatting with a random fellow student!",
+  }
+
   const allMessages = [
-    { id: "system-intro", sender: "system", text: isSchool ? "You're now chatting with someone from your school." : "You're now chatting with a fellow student." },
+    { id: "system-intro", sender: "system", text: systemText[matchReason] ?? "You're now chatting with a fellow student." },
+    ...(matchReason === "diff-school-diff-interest" || matchReason === "same-school-diff-interest"
+      ? [{ id: "system-diff", sender: "system", text: "You have different interests — here's a conversation starter:" }]
+      : []),
+    ...(icebreaker ? [{ id: "system-icebreaker", sender: "system", text: icebreaker }] : []),
     ...messages,
   ]
 
