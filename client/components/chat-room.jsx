@@ -34,7 +34,7 @@ function MessageBubble({ msg }) {
   if (msg.sender === "system") {
     return (
       <div className="flex justify-center py-2">
-        <span className="rounded-full bg-secondary/40 px-4 py-1.5 text-xs text-muted-foreground/60">
+        <span className="rounded-full bg-secondary/40 px-4 py-1.5 text-xs text-foreground/60">
           {msg.text}
         </span>
       </div>

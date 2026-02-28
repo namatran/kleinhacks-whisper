@@ -1,12 +1,23 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Shield, Users, Globe } from "lucide-react"
+import { useState, useEffect } from "react"
+import { io } from "socket.io-client"
+
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3002"
 
 export function EntryCard({ onConnect }) {
+  const [onlineCount, setOnlineCount] = useState(null)
+
+  useEffect(() => {
+    const socket = io(SOCKET_URL, { transports: ["websocket"] })
+    socket.on("online_count", ({ count }) => setOnlineCount(count))
+    return () => socket.disconnect()
+  }, [])
+
   const [email, setEmail] = useState(() => {
     // Remember email domain from localStorage
     if (typeof window !== "undefined") {
@@ -94,6 +105,19 @@ export function EntryCard({ onConnect }) {
             onChange={(e) => setInterest(e.target.value)}
             className="h-11 rounded-lg bg-input/50 border-border/60 placeholder:text-muted-foreground/50 focus-visible:border-primary focus-visible:ring-primary/30"
           />
+        </div>
+
+        <div className="flex flex-col items-center gap-2 -mb-4">
+          <div className="flex items-center justify-center gap-1.5 rounded-lg bg-primary/5 px-4 py-2.5 w-full">
+            <span className="text-xs text-primary/60">✦ OpenAi-powered matchmaking — matched by shared interests</span>
+          </div>
+          {onlineCount !== null && (
+            <div className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 w-full">
+              <span className="text-xs text-muted-foreground">
+                {onlineCount} student{onlineCount !== 1 ? "s" : ""} online right now
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-3">

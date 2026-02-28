@@ -124,6 +124,7 @@ const rooms = {};
 
 io.on("connection", (socket) => {
   console.log(`[+] Connected: ${socket.id}`);
+  broadcastOnlineCount();
 
   // JOIN QUEUE
   socket.on("join_queue", async ({ email, preferSameSchool, interest }) => {
@@ -147,6 +148,7 @@ io.on("connection", (socket) => {
     console.log(`[Q] ${socket.id} joining queue | category: ${category}`);
     addToQueue(socket.id, email, preferSameSchool, category, interest);
     socket.emit("queue_joined", { position: waitingUsers.length });
+    broadcastOnlineCount();
     attemptMatch(socket.id);
   });
 
@@ -262,6 +264,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`[-] Disconnected: ${socket.id}`);
     removeFromQueue(socket.id);
+    broadcastOnlineCount();
     for (const [roomId, members] of Object.entries(rooms)) {
       if (members.includes(socket.id)) {
         handleLeave(socket, roomId);
@@ -271,6 +274,9 @@ io.on("connection", (socket) => {
   });
 });
 
+function broadcastOnlineCount() {
+  io.emit("online_count", { count: io.engine.clientsCount });
+}
 async function attemptMatch(socketId, fallback = false) {
   const result = findMatch(socketId, fallback);
   if (!result) {
@@ -293,6 +299,7 @@ async function attemptMatch(socketId, fallback = false) {
   removeFromQueue(match.socketId);
   const roomId = `room_${Date.now()}`;
   rooms[roomId] = [socketId, match.socketId];
+  broadcastOnlineCount();
 
   io.to(socketId).emit("match_found", { 
     roomId, reason, icebreaker,
@@ -314,6 +321,7 @@ function handleLeave(socket, roomId) {
   const recipientId = members.find((id) => id !== socket.id);
   if (recipientId) io.to(recipientId).emit("stranger_left");
   delete rooms[roomId];
+  broadcastOnlineCount();
   console.log(`[LEAVE] Room ${roomId} closed`);
 }
 
