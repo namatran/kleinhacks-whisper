@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, ArrowLeft, LogOut, Users, Globe, Users, Globe } from "lucide-react"
+import { Send, ArrowLeft, LogOut, Users, Globe,} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSocket } from "@/hooks/useSocket"
 
@@ -56,17 +56,6 @@ export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket
       : "You're now chatting with a fellow student.",
   }
 
-  const [messages, setMessages] = useState([initialSystemMessage])
-
-  const initialSystemMessage = {
-    id: 1,
-    sender: "system",
-    text: isSchool
-      ? "You're now chatting with someone from your school."
-      : "You're now chatting with a fellow student.",
-  }
-
-  const [messages, setMessages] = useState([initialSystemMessage])
   const [input, setInput] = useState("")
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
