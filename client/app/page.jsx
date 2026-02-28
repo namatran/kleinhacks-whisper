@@ -9,14 +9,16 @@ export default function Home() {
   const [screen, setScreen] = useState("entry")
   const [matchType, setMatchType] = useState(null)
   const [email, setEmail] = useState("")                     // string, not null
+  const [interest, setInterest] = useState("")
   const [preferSameSchool, setPreferSameSchool] = useState(false)  // ← added this
   const [roomId, setRoomId] = useState(null)
   const [socket, setSocket] = useState(null)
 
-  function handleConnect(type, userEmail, preferSchool) {
+  function handleConnect(type, userEmail, preferSchool, userInterest) {
     setMatchType(type)
     setEmail(userEmail)
     setPreferSameSchool(preferSchool)
+    setInterest(userInterest || "")
     setScreen("waiting")
   }
 
@@ -30,6 +32,7 @@ export default function Home() {
     setMatchType(null)
     setEmail("")
     setPreferSameSchool(false)
+    setInterest("")
     setRoomId(null)
     setSocket(null)
     setScreen("entry")
@@ -42,7 +45,7 @@ export default function Home() {
         roomId={roomId}
         socket={socket}
         onDisconnect={handleDisconnect}
-        onNextChat={(type) => handleConnect(type, email, preferSameSchool)}  // ← wrapped to pass saved values
+        onNextChat={(type) => handleConnect(type, email, preferSameSchool, interest)}  // ← wrapped to pass saved values
       />
     )
   }
@@ -53,8 +56,8 @@ export default function Home() {
       <div className="relative z-10 w-full max-w-md">
         {screen === "entry" && (
           <EntryCard 
-            onConnect={(type, userEmail, preferSchool) => 
-              handleConnect(type, userEmail, preferSchool)
+            onConnect={(type, userEmail, preferSchool, userInterest) => 
+              handleConnect(type, userEmail, preferSchool, userInterest)
             } 
           />
         )}
@@ -63,6 +66,7 @@ export default function Home() {
             matchType={matchType}
             email={email}
             preferSameSchool={preferSameSchool}
+            interest={interest}
             onMatched={handleMatched}
             onExit={handleDisconnect}
           />

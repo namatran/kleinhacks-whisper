@@ -14,6 +14,12 @@ export function EntryCard({ onConnect }) {
     }
     return ""
   })
+  const [interest, setInterest] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("whisper_interest") || ""
+    }
+    return ""
+    })
   const [error, setError] = useState("")
 
   function validateEmail(value) {
@@ -32,7 +38,8 @@ export function EntryCard({ onConnect }) {
   function handleConnect(type, userEmail, preferSchool) {
     if (validateEmail(userEmail)) {
       localStorage.setItem("whisper_email", userEmail)
-      onConnect?.(type, userEmail, preferSchool)
+      localStorage.setItem("whisper_interest", interest.trim())
+      onConnect?.(type, userEmail, preferSchool, interest.trim() || null)
     }
   }
 
@@ -75,10 +82,24 @@ export function EntryCard({ onConnect }) {
           )}
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label htmlFor="interest" className="text-sm font-medium text-muted-foreground">
+            What's on your mind? <span className="text-muted-foreground/50 font-normal">(optional)</span>
+          </label>
+          <Input
+            id="interest"
+            type="text"
+            placeholder="e.g. AP exams, Valorant, college apps..."
+            value={interest}
+            onChange={(e) => setInterest(e.target.value)}
+            className="h-11 rounded-lg bg-input/50 border-border/60 placeholder:text-muted-foreground/50 focus-visible:border-primary focus-visible:ring-primary/30"
+          />
+        </div>
+
         <div className="flex flex-col gap-3">
           <Button
             size="lg"
-            onClick={() => handleConnect("school", email, true)}  // true = prefer same school
+            onClick={() => handleConnect("school", email, true)}
             className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
           >
             <Users className="size-4" />
@@ -88,7 +109,7 @@ export function EntryCard({ onConnect }) {
           <Button
             variant="outline"
             size="lg"
-            onClick={() => handleConnect("any", email, false)}   // false = no school preference
+            onClick={() => handleConnect("any", email, false)}
             className="h-12 w-full rounded-lg border-border/60 text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground transition-colors"
           >
             <Globe className="size-4" />

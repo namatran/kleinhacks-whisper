@@ -7,7 +7,7 @@ import { io } from "socket.io-client"
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3002"
 
-export function WaitingRoom({ matchType, email, preferSameSchool, onMatched, onExit }) {
+export function WaitingRoom({ matchType, email, preferSameSchool, interest, onMatched, onExit }) {
   const [dots, setDots] = useState("")
   const [waitTime, setWaitTime] = useState(0)
   const [noOneOnline, setNoOneOnline] = useState(false)
@@ -35,7 +35,7 @@ export function WaitingRoom({ matchType, email, preferSameSchool, onMatched, onE
     socketRef.current = socket
 
     socket.on("connect", () => {
-      socket.emit("join_queue", { email, preferSameSchool })
+      socket.emit("join_queue", { email, preferSameSchool, interest: interest || null })
     })
 
     socket.on("match_found", ({ roomId }) => {
