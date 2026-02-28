@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { MessageCircle, Shield, Users, Globe } from "lucide-react"
 import { useState, useEffect } from "react"
 import { io } from "socket.io-client"
+import { NeuralBackground } from "@/components/neural-background"
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3002"
 
@@ -149,5 +150,14 @@ export function EntryCard({ onConnect }) {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+export function EntryRoom({ onConnect }) {
+  return (
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4">
+      <NeuralBackground />
+      <EntryCard onConnect={onConnect} />
+    </div>
   )
 }
