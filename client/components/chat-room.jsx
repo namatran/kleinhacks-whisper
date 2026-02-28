@@ -5,13 +5,13 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Send, ArrowLeft, LogOut, Users, Globe, RefreshCw} from "lucide-react"
 import { useSocket } from "@/hooks/useSocket"
 import { Plus, Wind } from "lucide-react"  // Wind icon for breathing (or use Heart if you prefer)
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"  // you already have Dialog imported, but keep it
 import { Flag } from "lucide-react"  // flag icon for report
 import { Textarea } from "@/components/ui/textarea"  // shadcn textarea
 import { Label } from "@/components/ui/label"  // optional label for the report textarea
 import { useToast } from "@/components/ui/use-toast"
-import { Smile, Frown, Meh, Heart, Angry, Coffee, Zap, Cloud } from "lucide-react"
+import { Smile, Frown, Meh, Heart, Angry, Coffee, Zap, Cloud, LifeBuoy } from "lucide-react"
 
 function TypingIndicator() {
   return (
@@ -34,7 +34,7 @@ function MessageBubble({ msg }) {
   if (msg.sender === "system") {
     return (
       <div className="flex justify-center py-2">
-        <span className="rounded-full bg-secondary/40 px-4 py-1.5 text-xs text-foreground/60">
+        <span className="rounded-full bg-secondary/40 px-4 py-1.5 text-xs text-muted-foreground/60">
           {msg.text}
         </span>
       </div>
@@ -43,11 +43,7 @@ function MessageBubble({ msg }) {
 
   const isYou = msg.sender === "you"
   const isMood = msg.isMoodDeclaration === true
-
-  // Debug log to confirm when mood flag is detected
-  if (isMood) {
-    console.log("Mood message detected in bubble:", msg.text)
-  }
+  const isHelp = msg.isHelpSuggestion === true
 
   return (
     <div 
@@ -61,12 +57,15 @@ function MessageBubble({ msg }) {
 
         <div 
           className={`
-            rounded-2xl px-4 py-2.5 leading-relaxed
+            rounded-2xl px-4 py-3 leading-relaxed whitespace-pre-wrap
             ${isYou 
               ? "rounded-br-md bg-primary/90 text-primary-foreground" 
               : "rounded-bl-md bg-secondary/80 text-secondary-foreground"}
             ${isMood 
               ? "!bg-gray-300/90 !text-gray-900 !text-base !font-medium border border-gray-400 shadow-sm" 
+              : ""}
+            ${isHelp 
+              ? "!bg-green-100/90 !text-green-900 !text-base !font-medium border border-green-300 shadow-sm" 
               : ""}
           `}
         >
@@ -100,6 +99,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
   const [reportReason, setReportReason] = useState("")  // text input value
   const { toast } = useToast()
   const [showMoodSheet, setShowMoodSheet] = useState(false)
+  const [showHelpSheet, setShowHelpSheet] = useState(false)
 
   const { 
     messages, 
@@ -406,7 +406,128 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
                   Declare<br />Mood
                 </span>
               </Button>
+
+              <Button
+                variant="outline"
+                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-green-50/50 border-green-200"
+                onClick={() => {
+                  setShowOptions(false)
+                  setShowHelpSheet(true)
+                }}
+              >
+                <LifeBuoy className="size-8 text-green-600" />
+                <span className="text-xs font-medium leading-tight">
+                  Suggest<br />Help
+                </span>
+              </Button>
               {/* Add more square buttons here later if needed */}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <Sheet open={showHelpSheet} onOpenChange={setShowHelpSheet}>
+          <SheetContent side="bottom" className="rounded-t-2xl pt-4 pb-6 max-h-[80vh] overflow-y-auto">
+            <SheetHeader className="pb-3 border-b border-border/50">
+              <SheetTitle className="text-left text-lg font-semibold text-foreground">
+                Crisis & Support Resources
+              </SheetTitle>
+              <SheetDescription className="text-sm text-muted-foreground">
+                Tap any to share in chat (both of you will see it).
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="mt-5 space-y-3">
+              {[
+                {
+                  title: "988 Suicide & Crisis Lifeline",
+                  text: "Call or text 988 • Chat: 988lifeline.org",
+                  desc: "24/7 free, confidential support for anyone in distress."
+                },
+                {
+                  title: "Crisis Text Line",
+                  text: "Text HOME to 741741",
+                  desc: "Text with a trained counselor, anytime."
+                },
+                {
+                  title: "Trevor Project (LGBTQ+ Youth)",
+                  text: "Call 1-866-488-7386 • Text START to 678-678",
+                  desc: "24/7 crisis intervention for LGBTQ+ young people."
+                },
+                {
+                  title: "Trans Lifeline",
+                  text: "Call 877-565-8860",
+                  desc: "Peer support for trans people, by trans people."
+                },
+                {
+                  title: "National Domestic Violence Hotline",
+                  text: "Call 1-800-799-7233 • Text START to 88788",
+                  desc: "Confidential support for anyone experiencing abuse."
+                },
+                {
+                  title: "SAMHSA National Helpline",
+                  text: "Call 1-800-662-4357 (free, confidential, 24/7)",
+                  desc: "Free treatment referral and information for substance abuse and mental health."
+                },
+                {
+                  title: "National Eating Disorders Association",
+                  text: "Call 1-800-931-2237 • Text 'NEDA' to 741741",
+                  desc: "Support for eating disorders, body image, and related mental health issues."
+                },
+                {
+                  title: "NAMI Helpline",
+                  text: "Call 1-800-950-6264 • Text 'HELLO' to 741741",
+                  desc: "Information and support for mental illness, for you and your loved ones."
+                },
+                {
+                  title: "IMAlive Crisis Chat",
+                  text: "Chat at imalive.org • Available 24/7",
+                  desc: "Anonymous online chat for people in suicidal crisis."
+                },
+                {
+                  title: "LGBTQ+ National Youth Talkline",
+                  text: "Call 1-800-246-7743 (4-9pm ET, daily)",
+                  desc: "Peer support for LGBTQ+ youth. Trained volunteer counselors."
+                },
+                {
+                  title: "National Alliance on Mental Illness",
+                  text: "Visit nami.org for local support groups",
+                  desc: "Community-based support groups and educational programs."
+                },
+              ].map((resource, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full h-auto py-4 px-5 flex flex-col items-start gap-1 text-left border-green-300 hover:bg-green-50/70 hover:border-green-400 transition-all"
+                  onClick={() => {
+                    const fullMessage = `${resource.title}\n${resource.text}\n${resource.desc}`;
+
+                    // Send as help resource message via socket (bypasses moderation)
+                    socket.emit("suggest_help", { 
+                      roomId,
+                      helpText: fullMessage
+                    });
+
+                    // Confirmation toast
+                    toast({
+                      title: "Shared in Chat",
+                      description: `${resource.title} info sent to the conversation.`,
+                      duration: 4000,
+                    });
+
+                    // Close sheets
+                    setShowHelpSheet(false);
+                    setShowOptions(false);
+                  }}
+                >
+                  <span className="font-semibold text-green-800 text-base">{resource.title}</span>
+                  <span className="text-sm text-green-700 whitespace-pre-line">{resource.text}</span>
+                  <span className="text-xs text-muted-foreground mt-1">{resource.desc}</span>
+                </Button>
+              ))}
+            </div>
+
+            <div className="mt-6 text-center text-xs text-muted-foreground">
+              You're taking a brave step by looking out for help 💚
             </div>
           </SheetContent>
         </Sheet>

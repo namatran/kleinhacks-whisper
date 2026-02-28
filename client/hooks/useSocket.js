@@ -65,6 +65,17 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
       }]);
     });
 
+    socket.on("suggest_help", ({ helpText, fromSelf }) => {
+      console.log("Received suggest_help:", helpText, "fromSelf:", fromSelf);
+
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        sender: fromSelf ? "you" : "stranger",
+        text: helpText,
+        isHelpSuggestion: true  // flag for green bubble
+      }]);
+    });
+
     socket.on("crisis_detected", () => {
       setMessages((prev) => [...prev, {
         id: Date.now(),
@@ -90,6 +101,7 @@ export function useSocket({ roomId, socket: existingSocket, onStrangerLeft }) {
       socket.off("crisis_detected")
       socket.off("breathing_prompt")
       socket.off("mood_declared");
+      socket.off("suggest_help");
     }
   }, [roomId, existingSocket])
 

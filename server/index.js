@@ -77,8 +77,55 @@ const app = express();
 const server = createServer(app);
 
 const CRISIS_KEYWORDS = [
-  "kill myself", "want to die", "end my life", "suicide", "self harm",
-  "cut myself", "overdose", "don't want to live"
+  // Direct statements
+  "kill myself", "killing myself", "kill me", "kms", "kys", "kll myself",
+  "want to die", "wanna die", "want 2 die", "wanna d1e", "wanttod1e",
+  "end my life", "end it all", "end this life", "end everything",
+  "suicide", "su1c1de", "sui", "suiside", "suic1de", "s*icide",
+  "self harm", "selfharm", "self-harming", "sh", "self injur", "self-injury",
+
+  // Self-harm specific
+  "cut myself", "cutting myself", "cutting", "cuts", "cutters", "cutting again",
+  "overdose", "od", "overdosing", "take all my pills", "pop all my pills",
+  "take too many", "od on", "overdose on",
+
+  // Hopelessness / no will to live
+  "don't want to live", "dont wanna live", "dnt wna live", "no reason to live",
+  "nothing left to live for", "no point in living", "life isn't worth it",
+  "rather be dead", "better off dead", "wish i was dead", "wished i died",
+  "should just die", "i should die", "just die already",
+
+  // Planning / means
+  "how to kill myself", "how 2 kms", "best way to die", "easiest way to die",
+  "painless suicide", "painless way out", "quick way to die",
+  "jump in front of", "jump off", "hang myself", "rope", "noose",
+  "pills overdose", "carbon monoxide", "car exhaust",
+
+  // Indirect / coded phrases
+  "i'm done", "i can't do this anymore", "i can't keep going",
+  "i'm tired of living", "tired of being alive", "i'm so tired",
+  "just want it to end", "want it all to stop", "make it stop",
+  "not worth it anymore", "not worth living", "life sucks",
+  "everything hurts", "i hurt too much", "can't take the pain",
+  "goodbye forever", "goodbye everyone", "this is my last message",
+  "if i don't wake up", "if i'm gone tomorrow", "if i disappear",
+
+  // Common teen abbreviations / leetspeak / typos
+  "k1ll myself", "kll myself", "k1ll me", "kys", "k11 myself",
+  "s3lf h4rm", "s3lfh4rm", "sh", "sh again",
+  "0verd0se", "0d", "0verd0sing",
+  "d13", "d1e", "w4nn4 d1e", "wanna d13",
+  "3nd my l1fe", "3nd it all",
+
+  // Very common passive / veiled phrases
+  "i'm fine",
+  "just tired", "really tired of everything",
+  "i can't anymore", "i give up",
+  "i'm broken", "i'm too broken", "nothing can fix me",
+  "no one would care", "no one would miss me",
+  "everyone would be better off without me",
+  "i'm a burden", "i'm such a burden",
+  "i should just disappear"
 ];
 
 const EXTRA_PATTERNS = [
@@ -213,6 +260,30 @@ io.on("connection", (socket) => {
     io.to(recipientId).emit("receive_message", { message: message.trim(), timestamp, fromSelf: false });
 
     console.log(`[MSG] ${socket.id} → ${recipientId}`);
+  });
+
+  // SUGGEST HELP (bypass moderation for support resources)
+  socket.on("suggest_help", ({ roomId, helpText }) => {
+    console.log(`[HELP] Received from ${socket.id} in room ${roomId}`);
+
+    const room = rooms[roomId];
+    if (!room) {
+      console.log("[HELP ERROR] Room not found");
+      return;
+    }
+
+    const recipientId = room.find(id => id !== socket.id);
+    if (!recipientId) {
+      console.log("[HELP ERROR] No recipient found");
+      return;
+    }
+
+    console.log(`[HELP] Sending to ${recipientId}`);
+
+    // Send to sender (fromSelf: true)
+    socket.emit("suggest_help", { helpText, fromSelf: true });
+    // Send to recipient (fromSelf: false)
+    io.to(recipientId).emit("suggest_help", { helpText, fromSelf: false });
   });
 
   // TYPING INDICATOR
