@@ -56,8 +56,8 @@ export function EntryCard({ onConnect }) {
   }
 
   return (
-    <Card className="w-full max-w-md border-border/50 shadow-lg shadow-primary/5">
-      <CardHeader className="items-center text-center">
+    <Card className="w-full max-w-md border-border/50 shadow-lg shadow-primary/5 bg-background">
+      <CardHeader className="items-center text-center bg-background">
         <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10">
           <MessageCircle className="size-6 text-primary" />
         </div>
@@ -69,7 +69,7 @@ export function EntryCard({ onConnect }) {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-5">
+      <CardContent className="flex flex-col gap-5 bg-background">
         <div className="flex flex-col gap-2">
           <label htmlFor="school-email" className="text-sm font-medium text-muted-foreground">
             School email
@@ -155,9 +155,11 @@ export function EntryCard({ onConnect }) {
 
 export function EntryRoom({ onConnect }) {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center p-4">
+    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-hidden">
       <NeuralBackground />
-      <EntryCard onConnect={onConnect} />
+      <div className="relative z-10">
+        <EntryCard onConnect={onConnect} />
+      </div>
     </div>
   )
 }
