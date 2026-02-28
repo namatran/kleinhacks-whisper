@@ -10,9 +10,11 @@ export default function Home() {
   const [matchType, setMatchType] = useState(null)
   const [email, setEmail] = useState("")                     // string, not null
   const [interest, setInterest] = useState("")
+  const [matchReason, setMatchReason] = useState(null)
   const [preferSameSchool, setPreferSameSchool] = useState(false)  // ← added this
   const [roomId, setRoomId] = useState(null)
   const [socket, setSocket] = useState(null)
+  const [icebreaker, setIcebreaker] = useState(null)
 
   function handleConnect(type, userEmail, preferSchool, userInterest) {
     setMatchType(type)
@@ -22,9 +24,11 @@ export default function Home() {
     setScreen("waiting")
   }
 
-  const handleMatched = useCallback((rid, sock) => {
+  const handleMatched = useCallback((rid, sock, reason, ice) => {
     setRoomId(rid)
     setSocket(sock)
+    setMatchReason(reason)
+    setIcebreaker(ice)
     setScreen("chat")
   }, [])
 
@@ -44,8 +48,10 @@ export default function Home() {
         matchType={matchType}
         roomId={roomId}
         socket={socket}
+        matchReason={matchReason}
+        icebreaker={icebreaker}
         onDisconnect={handleDisconnect}
-        onNextChat={(type) => handleConnect(type, email, preferSameSchool, interest)}  // ← wrapped to pass saved values
+        onNextChat={(type) => handleConnect(type, email, preferSameSchool, interest)}
       />
     )
   }

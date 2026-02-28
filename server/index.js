@@ -6,6 +6,59 @@ import { Server } from "socket.io";
 import cors from "cors";
 import leoProfanity from "leo-profanity";
 import { addToQueue, removeFromQueue, findMatch, waitingUsers } from "./matchmaker.js";
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function categorizeInterest(interest) {
+  if (!interest?.trim()) return null;
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 20,
+      messages: [{
+        role: "user",
+        content: `Categorize this student interest into ONE short topic label (e.g. "gaming", "academics", "music", "sports", "art", "tech", "anime", "fitness"). Respond with only the label, lowercase.
+        
+Interest: "${interest.trim()}"`
+      }]
+    });
+    return response.choices[0].message.content.trim().toLowerCase();
+  } catch (e) {
+    console.error("[AI] Categorization failed:", e.message);
+    return null;
+  }
+}
+
+async function generateIcebreaker(user1, user2) {
+  const sharedCategory = user1.category && user1.category === user2.category;
+  
+  if (sharedCategory) {
+    return `You're both interested in ${user1.category}!`;
+  }
+
+  try {
+    const context = [
+      user1.interest ? `Person 1 is into: ${user1.interest}` : null,
+      user2.interest ? `Person 2 is into: ${user2.interest}` : null,
+    ].filter(Boolean).join(". ");
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 60,
+      messages: [{
+        role: "user",
+        content: `Two students are about to chat anonymously. ${context || "They have no listed interests."}
+        
+Write a single, short, friendly icebreaker question or conversation starter (max 15 words). No quotes, no preamble.`
+      }]
+    });
+    return response.choices[0].message.content.trim();
+  } catch (e) {
+    console.error("[AI] Icebreaker failed:", e.message);
+    return null;
+  }
+}
 
 leoProfanity.loadDictionary();
 
@@ -62,13 +115,14 @@ io.on("connection", (socket) => {
   console.log(`[+] Connected: ${socket.id}`);
 
   // JOIN QUEUE
-  socket.on("join_queue", ({ email, preferSameSchool }) => {
+  socket.on("join_queue", async ({ email, preferSameSchool, interest }) => {
     if (!email || !email.includes("@")) {
       socket.emit("error", { message: "Invalid email." });
       return;
     }
-    console.log(`[Q] ${socket.id} joining queue`);
-    addToQueue(socket.id, email, preferSameSchool);
+    const category = await categorizeInterest(interest);
+    console.log(`[Q] ${socket.id} joining queue | category: ${category}`);
+    addToQueue(socket.id, email, preferSameSchool, category, interest);
     socket.emit("queue_joined", { position: waitingUsers.length });
     attemptMatch(socket.id);
   });
@@ -136,16 +190,33 @@ io.on("connection", (socket) => {
   });
 });
 
-function attemptMatch(socketId) {
-  const match = findMatch(socketId);
-  if (!match) return;
+async function attemptMatch(socketId, fallback = false) {
+  const result = findMatch(socketId, fallback);
+  if (!result) {
+    if (!fallback) {
+      setTimeout(() => {
+        if (waitingUsers.find((u) => u.socketId === socketId)) {
+          attemptMatch(socketId, true);
+        }
+      }, 10000);
+    }
+    return;
+  }
+
+  const { match, reason } = result;
+  const user = waitingUsers.find((u) => u.socketId === socketId);
+  
+  const icebreaker = await generateIcebreaker(user, match);
+  
   removeFromQueue(socketId);
   removeFromQueue(match.socketId);
   const roomId = `room_${Date.now()}`;
   rooms[roomId] = [socketId, match.socketId];
-  io.to(socketId).emit("match_found", { roomId });
-  io.to(match.socketId).emit("match_found", { roomId });
-  console.log(`[MATCH] Room ${roomId}: ${socketId} <-> ${match.socketId}`);
+
+  io.to(socketId).emit("match_found", { roomId, reason, icebreaker });
+  io.to(match.socketId).emit("match_found", { roomId, reason, icebreaker });
+
+  console.log(`[MATCH] Room ${roomId}: ${socketId} <-> ${match.socketId} (${reason}) | icebreaker: ${icebreaker}`);
 }
 
 function handleLeave(socket, roomId) {

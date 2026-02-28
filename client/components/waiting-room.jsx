@@ -12,6 +12,8 @@ export function WaitingRoom({ matchType, email, preferSameSchool, interest, onMa
   const [waitTime, setWaitTime] = useState(0)
   const [noOneOnline, setNoOneOnline] = useState(false)
   const [matched, setMatched] = useState(false)
+  const [matchReason, setMatchReason] = useState(null)
+
   const socketRef = useRef(null)
   const matchedRef = useRef(false) // prevent double-fire
   const isSchool = matchType === "school"
@@ -38,15 +40,15 @@ export function WaitingRoom({ matchType, email, preferSameSchool, interest, onMa
       socket.emit("join_queue", { email, preferSameSchool, interest: interest || null })
     })
 
-    socket.on("match_found", ({ roomId }) => {
-      if (matchedRef.current) return // ignore duplicate fires
+    socket.on("match_found", ({ roomId, reason, icebreaker }) => {
+      if (matchedRef.current) return
       matchedRef.current = true
       setMatched(true)
+      setMatchReason(reason)
       setNoOneOnline(false)
-      setTimeout(() => {
-        onMatched?.(roomId, socket)
-      }, 1500)
+      setTimeout(() => onMatched?.(roomId, socket, reason, icebreaker), 1500)
     })
+
 
     return () => {
       clearInterval(dotInterval)
@@ -80,9 +82,7 @@ export function WaitingRoom({ matchType, email, preferSameSchool, interest, onMa
 
       <div className="flex flex-col items-center gap-3">
         <h2 className="text-xl font-medium tracking-tight text-foreground">
-          {matched ? (
-            "Someone's here — connecting you"
-          ) : (
+          {matched ? "Someone's here — connecting you" : (
             <>
               Finding you someone to talk to
               <span className="inline-block w-6 text-left">{dots}</span>
@@ -90,11 +90,21 @@ export function WaitingRoom({ matchType, email, preferSameSchool, interest, onMa
           )}
         </h2>
 
-        {!matched && (
+        {!matched ? (
           <div className="flex items-center gap-2 rounded-full bg-secondary/60 px-4 py-2">
             {isSchool ? <Users className="size-3.5 text-muted-foreground" /> : <Globe className="size-3.5 text-muted-foreground" />}
             <span className="text-sm text-muted-foreground">
               {isSchool ? "Matching with your school" : "Matching with any student"}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-full bg-secondary/60 px-4 py-2" style={{ animation: "fade-in 0.4s ease-out both" }}>
+            <span className="text-sm text-muted-foreground">
+              {matchReason === "same-school-same-interest" && "Found someone from your school with similar interests!"}
+              {matchReason === "same-school-diff-interest" && "Found someone from your school!"}
+              {matchReason === "same-interest-diff-school" && "Found someone with similar interests from another school!"}
+              {matchReason === "diff-school-diff-interest" && "Couldn't find a perfect match — connecting you with someone!"}
+              {!matchReason && "Someone's here — connecting you"}
             </span>
           </div>
         )}
