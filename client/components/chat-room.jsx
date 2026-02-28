@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, ArrowLeft, LogOut, Users, Globe } from "lucide-react"
+import { Send, ArrowLeft, LogOut, Users, Globe, Users, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSocket } from "@/hooks/useSocket"
 
@@ -45,7 +45,7 @@ function MessageBubble({ msg }) {
   )
 }
 
-export function ChatScreen({ matchType, onDisconnect, roomId, socket }) {
+export function ChatScreen({ matchType, onDisconnect, onNextChat, roomId, socket }) {
   const isSchool = matchType === "school"
 
   const initialSystemMessage = {
