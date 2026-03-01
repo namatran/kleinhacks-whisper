@@ -32,11 +32,20 @@ function TypingIndicator() {
 
 function MessageBubble({ msg }) {
   if (msg.sender === "system") {
+    const isIcebreaker = msg.isIcebreaker === true
     return (
       <div className="flex justify-center py-2">
-        <span className="rounded-full bg-secondary/40 px-4 py-1.5 text-xs text-muted-foreground/60">
-          {msg.text}
-        </span>
+        {isIcebreaker ? (
+          <div className="rounded-2xl bg-primary/15 border-2 border-primary/30 px-6 py-5 max-w-[85%] text-center">
+            <span className="text-base font-semibold text-foreground leading-relaxed">
+              {msg.text}
+            </span>
+          </div>
+        ) : (
+          <span className="rounded-full bg-secondary/40 px-4 py-1.5 text-xs text-muted-foreground/60">
+            {msg.text}
+          </span>
+        )}
       </div>
     )
   }
@@ -96,7 +105,9 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
   const [showOptions, setShowOptions] = useState(false)
   const [showBreathing, setShowBreathing] = useState(false)
   const [showReportDialog, setShowReportDialog] = useState(false)
-  const [reportReason, setReportReason] = useState("")  // text input value
+  const [reportReason, setReportReason] = useState("")
+  const [breathingPhaseIndex, setBreathingPhaseIndex] = useState(0)
+  const [breathingElapsed, setBreathingElapsed] = useState(0)  // text input value
   const { toast } = useToast()
   const [showMoodSheet, setShowMoodSheet] = useState(false)
   const [showHelpSheet, setShowHelpSheet] = useState(false)
@@ -123,7 +134,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
     ...(matchReason === "diff-school-diff-interest" || matchReason === "same-school-diff-interest"
       ? [{ id: "system-diff", sender: "system", text: "You have different interests — here's a conversation starter:" }]
       : []),
-    ...(icebreaker ? [{ id: "system-icebreaker", sender: "system", text: icebreaker }] : []),
+    ...(icebreaker ? [{ id: "system-icebreaker", sender: "system", text: icebreaker, isIcebreaker: true }] : []),
     ...messages,
   ]
 
@@ -133,6 +144,31 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
 
   useEffect(() => { scrollToBottom() }, [messages, strangerTyping, scrollToBottom])
   useEffect(() => { inputRef.current?.focus() }, [])
+
+  // Breathing timer effect
+  useEffect(() => {
+    if (!showBreathing) return
+
+    const breathingPhases = [
+      { label: "Inhale", duration: 4 },
+      { label: "Hold", duration: 7 },
+      { label: "Exhale", duration: 8 }
+    ]
+
+    const currentPhase = breathingPhases[breathingPhaseIndex]
+    const interval = setInterval(() => {
+      setBreathingElapsed(prev => {
+        const newElapsed = prev + 100
+        if (newElapsed >= currentPhase.duration * 1000) {
+          setBreathingPhaseIndex(i => (i + 1) % 3)
+          return 0
+        }
+        return newElapsed
+      })
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [showBreathing, breathingPhaseIndex])
 
   function handleSend() {
     const trimmed = input.trim()
@@ -309,7 +345,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
             }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="h-10 flex-1 rounded-xl border border-border/40 bg-input/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-colors focus:border-primary/40 focus:bg-input/50"
+            className="h-10 flex-1 rounded-xl border border-border/40 bg-input/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-colors focus:border-primary/50 focus:ring-primary/40 focus:bg-input/50"
             aria-label="Message input"
           />
           <Button
@@ -374,7 +410,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
               {/* Breathing Break button – square and compact */}
               <Button
                 variant="outline"
-                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-blue-50/50 border-blue-200"
+                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-blue-50/70 border-blue-200 transition-all duration-200 hover:border-blue-400"
                 onClick={() => {
                   setShowOptions(false);
                   setShowBreathing(true);
@@ -396,7 +432,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
                 
               <Button
                 variant="outline"
-                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-purple-50/50 border-purple-200"
+                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-purple-50/70 border-purple-200 transition-all duration-200 hover:border-purple-400"
                 onClick={() => {
                   setShowMoodSheet(true)
                 }}
@@ -409,7 +445,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
 
               <Button
                 variant="outline"
-                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-green-50/50 border-green-200"
+                className="h-24 w-24 flex flex-col items-center justify-center gap-2 p-3 text-center hover:bg-green-50/70 border-green-200 transition-all duration-200 hover:border-green-400"
                 onClick={() => {
                   setShowOptions(false)
                   setShowHelpSheet(true)
@@ -497,7 +533,7 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
                 <Button
                   key={index}
                   variant="outline"
-                  className="w-full h-auto py-4 px-5 flex flex-col items-start gap-1 text-left border-green-300 hover:bg-green-50/70 hover:border-green-400 transition-all"
+                  className="w-full h-auto py-4 px-5 flex flex-col items-start gap-1 text-left border-green-300 hover:bg-green-50/80 hover:border-green-400 transition-all duration-200"
                   onClick={() => {
                     const fullMessage = `${resource.title}\n${resource.text}\n${resource.desc}`;
 
@@ -586,27 +622,99 @@ export function ChatScreen({ matchType, matchReason, icebreaker, sharedCategory,
           </SheetContent>
         </Sheet>
 
-        <Dialog open={showBreathing} onOpenChange={setShowBreathing}>
+        <Dialog open={showBreathing} onOpenChange={(open) => {
+          if (!open) {
+            setShowBreathing(false)
+            setBreathingPhaseIndex(0)
+            setBreathingElapsed(0)
+          }
+        }}>
           <DialogContent className="sm:max-w-md text-center">
             <DialogHeader>
               <DialogTitle>4-7-8 Breathing Break</DialogTitle>
               <DialogDescription className="pt-2">
-                Inhale for 4 seconds, hold for 7 seconds, exhale for 8 seconds.<br />
-                Repeat 4–5 times to feel calmer.
+                Exhale completely, then follow the cycle. Repeat as many times as needed.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-10">
-              <div className="mx-auto size-40 rounded-full bg-blue-100/30 flex items-center justify-center animate-pulse">
-                <Wind className="size-16 text-blue-600" />
+            <div className="py-8 flex flex-col items-center gap-6">
+              {/* Circular Progress Bar */}
+              <div className="relative size-48 flex items-center justify-center">
+                <svg width={200} height={200} viewBox="0 0 200 200" className="absolute inset-0">
+                  {/* Background circle */}
+                  <circle
+                    cx={100}
+                    cy={100}
+                    r={90}
+                    fill="none"
+                    stroke="rgb(229, 231, 235)"
+                    strokeWidth={8}
+                  />
+                  {/* Progress circle */}
+                  <circle
+                    cx={100}
+                    cy={100}
+                    r={90}
+                    fill="none"
+                    stroke="rgb(37, 99, 235)"
+                    strokeWidth={8}
+                    strokeDasharray={2 * Math.PI * 90}
+                    strokeDashoffset={2 * Math.PI * 90 * (1 - (breathingElapsed / ([
+                      { label: "Inhale", duration: 4 },
+                      { label: "Hold", duration: 7 },
+                      { label: "Exhale", duration: 8 }
+                    ][breathingPhaseIndex].duration * 1000)))}
+                    strokeLinecap="round"
+                    style={{
+                      transition: 'stroke-dashoffset 0.1s linear',
+                      transform: 'rotate(-90deg)',
+                      transformOrigin: '100px 100px'
+                    }}
+                  />
+                </svg>
+                {/* Center content */}
+                <div className="z-10 flex flex-col items-center gap-2">
+                  <Wind className="size-12 text-blue-600 animate-pulse" />
+                  <div className="text-4xl font-bold text-blue-600">
+                    {Math.ceil(([
+                      { label: "Inhale", duration: 4 },
+                      { label: "Hold", duration: 7 },
+                      { label: "Exhale", duration: 8 }
+                    ][breathingPhaseIndex].duration * 1000 - breathingElapsed) / 1000)}
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {[
+                      { label: "Inhale", duration: 4 },
+                      { label: "Hold", duration: 7 },
+                      { label: "Exhale", duration: 8 }
+                    ][breathingPhaseIndex].label}
+                  </div>
+                </div>
               </div>
-              <p className="mt-6 text-sm text-muted-foreground">
-                Pausing for some calm breaths 💙 You've got this.
-              </p>
+
+              {/* Phase indicators */}
+              <div className="flex gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-2 w-8 rounded-full transition-all ${
+                      i === breathingPhaseIndex
+                        ? 'bg-blue-600'
+                        : i < breathingPhaseIndex
+                        ? 'bg-blue-300'
+                        : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
 
             <DialogFooter className="sm:justify-center">
-              <Button onClick={() => setShowBreathing(false)}>
+              <Button onClick={() => {
+                setShowBreathing(false)
+                setBreathingPhaseIndex(0)
+                setBreathingElapsed(0)
+              }}>
                 I'm Done
               </Button>
             </DialogFooter>

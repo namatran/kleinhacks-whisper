@@ -56,8 +56,8 @@ export function EntryCard({ onConnect }) {
   }
 
   return (
-    <Card className="w-full max-w-md border-border/50 shadow-lg shadow-primary/5 bg-background">
-      <CardHeader className="items-center text-center bg-background">
+    <Card className="w-full max-w-md border-border/50 shadow-lg shadow-primary/10 bg-background">
+      <CardHeader className="items-center text-center bg-background pb-5">
         <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10">
           <MessageCircle className="size-6 text-primary" />
         </div>
@@ -69,7 +69,7 @@ export function EntryCard({ onConnect }) {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-5 bg-background">
+      <CardContent className="flex flex-col gap-6 bg-background pt-6 pb-6">
         <div className="flex flex-col gap-2">
           <label htmlFor="school-email" className="text-sm font-medium text-muted-foreground">
             School email
@@ -104,7 +104,7 @@ export function EntryCard({ onConnect }) {
             placeholder="e.g. AP exams, Valorant, college apps..."
             value={interest}
             onChange={(e) => setInterest(e.target.value)}
-            className="h-11 rounded-lg bg-input/50 border-border/60 placeholder:text-muted-foreground/50 focus-visible:border-primary focus-visible:ring-primary/30"
+            className="h-11 rounded-lg bg-input/50 border-border/60 placeholder:text-muted-foreground/40 focus-visible:border-primary/60 focus-visible:ring-primary/40 focus-visible:bg-input/70 transition-colors"
           />
         </div>
 
@@ -125,7 +125,7 @@ export function EntryCard({ onConnect }) {
           <Button
             size="lg"
             onClick={() => handleConnect("school", email, true)}
-            className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/85 transition-colors"
+            className="h-12 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md transition-all font-semibold"
           >
             <Users className="size-4" />
             Talk to someone from my school
@@ -135,7 +135,7 @@ export function EntryCard({ onConnect }) {
             variant="outline"
             size="lg"
             onClick={() => handleConnect("any", email, false)}
-            className="h-12 w-full rounded-lg border-border/60 text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground transition-colors"
+            className="h-12 w-full rounded-lg border-border/60 hover:bg-secondary/50 hover:border-border/80 transition-all font-semibold"
           >
             <Globe className="size-4" />
             Talk to any student
